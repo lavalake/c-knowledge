@@ -1,0 +1,99 @@
+http://embdev.net/topic/157425
+Preventing GCC from optimizing out variable
+  I'm using CodeSourcery GCC for ARM and have this problem where when I 
+  enable any level of optimization (1,2 or 3), this struct I have defined 
+  as const is being optimized out.  It's a block of information that I 
+  have deliberately put into a certain part of flash, so it's not accessed 
+  by it's struct name, but by address.  GCC insists on removing it unless 
+  I use -o0.  I have tried to fool it by assigning another variable this 
+  struct's address, but it doesn't work.  Is there an easy way to simply 
+  tell GCC not to optimize this away?
+  Report post Edit Move Thread sperren Delete topic Thread mit anderem zusammenführen Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: Ernst (Guest) 
+  Posted on: 2009-11-19 18:25  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  You can try to use GCC _attributes_ to mark the structs as "used":
+  struct x y __attribute__((__used__));
+   
+  
+  
+  
+  http://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html
+  Report post Edit Delete Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: jrmymllr jrmymllr (jrmymllr) 
+  Posted on: 2009-11-19 18:49  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  Darn, didn't work.  No warning or errors, it still discards the struct. 
+  There doesn't seem to be anything in the documentation for CS GCC about 
+  this, however.
+  Report post Edit Delete Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: Thomas Pircher (tpircher) 
+  Posted on: 2009-11-19 19:03  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  What about adding a pseudo-assembler instruction that uses the address 
+  of the variable "my_struct"; something like:
+  __asm__ __volatile__("" :: "m" (my_struct)); 
+  
+  Report post Edit Delete Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: jrmymllr jrmymllr (jrmymllr) 
+  Posted on: 2009-11-19 20:19  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  Cool, that worked, thank you.
+  Report post Edit Delete Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: Marcus Harnisch (mharnisch) 
+  Posted on: 2009-11-19 21:57  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  Jerry Milner wrote:
+  > Darn, didn't work.  No warning or errors, it still discards the struct.
+  
+  What is "it"? Compiler or linker? The attribute only tells the compiler 
+  that the variable is used, the linker can still toss it out. Check if 
+  the variable is in the object file.
+  
+  I am not a GNU expert, but it would appear that the ld-option 
+  `--print-gc-sections' gives you a report about removed input sections.
+  
+  Regards
+  Marcus
+  http://www.doulos.com/arm/
+  Report post Edit Delete Quote selected text Reply Reply with quote Re: Preventing GCC from optimizing out variable 
+   Author: jrmymllr jrmymllr (jrmymllr) 
+  Posted on: 2009-11-20 12:45  
+  
+  
+  --------------------------------------------------------------------------------
+  Rate this post 0 ▲ useful 
+  ▼ not useful  
+  I don't know if the linker or compiler discarded it, but after adding 
+  the _asm_ statement, it appears in the .map file and most importantly, 
+  the code now works with optimization on.  The struct in question 
+  contains strings that are displayed in a menu, so it's obvious when this 
+  struct is missing.
+
+
+
+Is memory allocated for a static const variable whose address is never used?
+  is-memory-allocated-for-a-static-const-variable-whose-address-is-never-used
+
+3.10 Options That Control Optimization
+  https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
